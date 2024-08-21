@@ -8,10 +8,13 @@
 import Firebase
 import CoreData
 import AuthenticationServices
+// 여기서부터 추가된 내용
+import Airbridge
+// 여기서부터 추가된 내용 끝
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
-    
+
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
         FirebaseApp.configure()
@@ -25,60 +28,30 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         //Start observing payment transaction updates
         IAPManager.shared.startObserving()
         
+        // 여기서부터 추가된 내용
+        let option = AirbridgeOptionBuilder(name: "Jotify", token: "undefined")
+            .build()
+        Airbridge.initializeSDK(option: option)
+        
+        Airbridge.handleDeferredDeeplink { url in
+            if let url = url {
+                // 지연된 딥링크 URL을 처리하는 로직을 여기에 구현합니다.
+                // 예: 특정 뷰 컨트롤러로 이동
+                self.navigateToAppropriateViewController(with: url)
+            }
+        }
+        // 여기서부터 추가된 내용 끝
+        
         return true
     }
     
-    // MARK: UISceneSession Lifecycle
-    
-    func application(_ application: UIApplication, configurationForConnecting connectingSceneSession: UISceneSession, options: UIScene.ConnectionOptions) -> UISceneConfiguration {
-        // Called when a new scene session is being created.
-        // Use this method to select a configuration to create the new scene with.
-        return UISceneConfiguration(name: "Default Configuration", sessionRole: connectingSceneSession.role)
+    // 여기서부터 추가된 내용
+    private func navigateToAppropriateViewController(with url: URL) {
+        // URL을 파싱하여 적절한 뷰 컨트롤러로 이동하는 로직을 구현합니다.
+        // 예: url.path를 확인하여 노트 상세 페이지, 설정 페이지 등으로 이동
     }
+    // 여기서부터 추가된 내용 끝
     
-    func application(_ application: UIApplication, didDiscardSceneSessions sceneSessions: Set<UISceneSession>) {
-        // Called when the user discards a scene session.
-        // If any sessions were discarded while the application was not running, this will be called shortly after application:didFinishLaunchingWithOptions.
-        // Use this method to release any resources that were specific to the discarded scenes, as they will not return.
-    }
-    
-    //check to see if Apple credential revoked since last launch
-    func didAppleIDStateRevokeWhileTerminated() {
-        // Retrieve user ID saved in UserDefaults
-        if let userID = UserDefaults.standard.string(forKey: "appleAuthorizedUserIdKey") {
-            
-            // Check Apple ID credential state
-            ASAuthorizationAppleIDProvider().getCredentialState(forUserID: userID, completion: {
-                credentialState, error in
-                
-                switch(credentialState) {
-                case .authorized:
-                    print("Signed In with Apple, valid credential")
-                    break
-                case .notFound,
-                        .transferred,
-                        .revoked:
-                    // Credential no longer authorized...
-                    // Perform sign out
-                    AuthManager.signOut()
-                    break
-                @unknown default:
-                    break
-                }
-            })
-        }
-    }
-    
-    func registerNotificationActions() {
-        // Define the notification type
-        let noteReminderCategory =
-        UNNotificationCategory(identifier: "NOTE_REMINDER", actions: [], intentIdentifiers: [], hiddenPreviewsBodyPlaceholder: "", options: .customDismissAction)
-        // Register the notification type.
-        let notificationCenter = UNUserNotificationCenter.current()
-        notificationCenter.setNotificationCategories([noteReminderCategory])
-    }
-    
-    //Temporary implementation of CoreData+CloudKit for transition process
     // MARK: - Core Data stack
     lazy var applicationDocumentsDirectory: URL = {
         // The directory the application uses to store the Core Data store file. This code uses a directory named "com.MyApp" in the application's documents Application Support directory.

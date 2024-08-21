@@ -7,7 +7,12 @@
 
 import UIKit
 import SwiftUI
-import FirebaseDynamicLinks
+// 여기서부터 삭제된 내용
+// import FirebaseDynamicLinks
+// 여기서부터 삭제된 내용 끝
+// 여기서부터 추가된 내용
+import Airbridge
+// 여기서부터 추가된 내용 끝
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate, UNUserNotificationCenterDelegate {
     
@@ -84,46 +89,43 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, UNUserNotificationCente
     }
     
     func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
-        if let incomingUrl = userActivity.webpageURL {
-            print("Incoming URL is \(incomingUrl)")
-            DynamicLinks.dynamicLinks().handleUniversalLink(incomingUrl) { dynamicLink, error in
-                guard error == nil else {
-                    print("Found an error with dynamic link: \(error!.localizedDescription)")
-                    return
-                }
-                if let dynamicLink = dynamicLink {
-                    self.handleIncomingDynamicLink(dynamicLink)
-                }
-            }
+        // 여기서부터 추가된 내용
+        let isHandled = Airbridge.handleDeeplink(userActivity: userActivity) { url in
+            // 딥링크 URL을 처리하는 로직을 여기에 구현합니다.
+            // 예: 특정 뷰 컨트롤러로 이동
+            self.navigateToAppropriateViewController(with: url)
         }
+        
+        if !isHandled {
+            // Airbridge가 처리하지 않은 경우, 기존의 딥링크 처리 로직을 여기에 구현합니다.
+        }
+        // 여기서부터 추가된 내용 끝
     }
     
     //App opened from background - used partially for widgets
     func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
-        print("Received a URL through a custom scheme...")
-        guard let urlinfo = URLContexts.first?.url else { return }
-        if let dynamicLink = DynamicLinks.dynamicLinks().dynamicLink(fromCustomSchemeURL: urlinfo) {
-            self.handleIncomingDynamicLink(dynamicLink)
-        } else {
-            maybePressedRecentNoteWidget(urlContexts: URLContexts)
-        }
-    }
-    
-    func handleIncomingDynamicLink(_ dynamicLink: DynamicLink) {
-        guard let url = dynamicLink.url else {
-            print("The dynamic link object has no url")
-            return
+        guard let url = URLContexts.first?.url else { return }
+        
+        // 여기서부터 추가된 내용
+        let isHandled = Airbridge.handleDeeplink(url: url) { url in
+            // 딥링크 URL을 처리하는 로직을 여기에 구현합니다.
+            // 예: 특정 뷰 컨트롤러로 이동
+            self.navigateToAppropriateViewController(with: url)
         }
         
-        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
-              let queryItems = components.queryItems else { return }
-        for queryItem in queryItems {
-            print("Parameter \(queryItem.name) has a value of \(queryItem.value ?? "")")
-            
-            //queryItem.value is the UID of the person who referral this person
-            UserDefaults.standard.set(queryItem.value, forKey: "referralId")
+        if !isHandled {
+            // Airbridge가 처리하지 않은 경우, 기존의 URL 처리 로직을 여기에 구현합니다.
+            maybePressedRecentNoteWidget(urlContexts: URLContexts)
         }
+        // 여기서부터 추가된 내용 끝
     }
+    
+    // 여기서부터 추가된 내용
+    private func navigateToAppropriateViewController(with url: URL) {
+        // URL을 파싱하여 적절한 뷰 컨트롤러로 이동하는 로직을 구현합니다.
+        // 예: url.path를 확인하여 노트 상세 페이지, 설정 페이지 등으로 이동
+    }
+    // 여기서부터 추가된 내용 끝
     
     //collect data and present EditingController if widget pressed
     private func maybePressedRecentNoteWidget(urlContexts: Set<UIOpenURLContext>) {
