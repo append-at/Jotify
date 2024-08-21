@@ -12,7 +12,9 @@ target 'Jotify' do
   pod 'Firebase/Auth'
   pod 'Firebase/Firestore'
   pod 'FirebaseFirestoreSwift'
-  pod 'Firebase/DynamicLinks'
+  # 여기서부터 삭제된 내용
+  # pod 'Firebase/DynamicLinks'
+  # 여기서부터 삭제된 내용 끝
   
   pod 'Blueprints'
   pod 'Pageboy', '~> 3.6'
@@ -20,6 +22,10 @@ target 'Jotify' do
   pod 'ViewAnimator'
   pod 'SPIndicator'
   pod 'SPPermissions/Notification'
+  
+  # 여기서부터 추가된 내용
+  pod 'airbridge-ios-sdk', '4.0.2'
+  # 여기서부터 추가된 내용 끝
   
   post_install do |installer|
     installer.pods_project.targets.each do |target|

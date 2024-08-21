@@ -11,6 +11,10 @@
 	<key>com.apple.developer.associated-domains</key>
 	<array>
 		<string>applinks:jotify.page.link</string>
+		<!-- 여기서부터 추가된 내용 -->
+		<string>applinks:duckeeandroiddev.airbridge.io</string>
+		<string>applinks:duckeeandroiddev.abr.ge</string>
+		<!-- 여기서부터 추가된 내용 끝 -->
 	</array>
 	<key>com.apple.developer.icloud-container-identifiers</key>
 	<array>
