@@ -7,7 +7,7 @@
 
 import UIKit
 import SwiftUI
-import FirebaseDynamicLinks
+import Airbridge
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate, UNUserNotificationCenterDelegate {
     
@@ -86,14 +86,14 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, UNUserNotificationCente
     func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
         if let incomingUrl = userActivity.webpageURL {
             print("Incoming URL is \(incomingUrl)")
-            DynamicLinks.dynamicLinks().handleUniversalLink(incomingUrl) { dynamicLink, error in
-                guard error == nil else {
-                    print("Found an error with dynamic link: \(error!.localizedDescription)")
-                    return
-                }
-                if let dynamicLink = dynamicLink {
-                    self.handleIncomingDynamicLink(dynamicLink)
-                }
+            let isHandled = Airbridge.handleDeeplink(userActivity: userActivity) { url in
+                // 当应用程序通过Airbridge深度链接打开时
+                // 使用url（YOUR_SCHEME://...）显示适当的内容
+                self.handleIncomingDeeplink(url)
+            }
+            if !isHandled {
+                // 当应用程序通过其他深度链接打开时
+                // 使用现有逻辑
             }
         }
     }
@@ -102,19 +102,19 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, UNUserNotificationCente
     func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
         print("Received a URL through a custom scheme...")
         guard let urlinfo = URLContexts.first?.url else { return }
-        if let dynamicLink = DynamicLinks.dynamicLinks().dynamicLink(fromCustomSchemeURL: urlinfo) {
-            self.handleIncomingDynamicLink(dynamicLink)
-        } else {
+        let isHandled = Airbridge.handleDeeplink(url: urlinfo) { url in
+            // 当应用程序通过Airbridge深度链接打开时
+            // 使用url（YOUR_SCHEME://...）显示适当的内容
+            self.handleIncomingDeeplink(url)
+        }
+        if !isHandled {
+            // 当应用程序通过其他深度链接打开时
+            // 使用现有逻辑
             maybePressedRecentNoteWidget(urlContexts: URLContexts)
         }
     }
     
-    func handleIncomingDynamicLink(_ dynamicLink: DynamicLink) {
-        guard let url = dynamicLink.url else {
-            print("The dynamic link object has no url")
-            return
-        }
-        
+    func handleIncomingDeeplink(_ url: URL) {
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
               let queryItems = components.queryItems else { return }
         for queryItem in queryItems {
