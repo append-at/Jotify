@@ -8,6 +8,8 @@
 import Firebase
 import CoreData
 import AuthenticationServices
+import Airbridge
+import AppTrackingTransparency
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -25,7 +27,42 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         //Start observing payment transaction updates
         IAPManager.shared.startObserving()
         
+        // 初始化Airbridge SDK
+        let option = AirbridgeOptionBuilder(name: "jotifydev", token: "f2bece0bec6a480da277084c96a1fb2f")
+            .build()
+        Airbridge.initializeSDK(option: option)
+        
+        // 处理延迟深度链接
+        _ = Airbridge.handleDeferredDeeplink { url in
+            if let url = url {
+                // 使用url（YOUR_SCHEME://...）显示适当的内容
+                print("Received deferred deeplink: \(url)")
+                // 在这里处理延迟深度链接，例如导航到特定页面
+            }
+        }
+        
+        requestTrackingAuthorization()
+        
         return true
+    }
+    
+    func requestTrackingAuthorization() {
+        if #available(iOS 14, *) {
+            ATTrackingManager.requestTrackingAuthorization { status in
+                switch status {
+                case .authorized:
+                    print("Tracking authorized")
+                case .denied:
+                    print("Tracking denied")
+                case .notDetermined:
+                    print("Tracking not determined")
+                case .restricted:
+                    print("Tracking restricted")
+                @unknown default:
+                    print("Unknown tracking status")
+                }
+            }
+        }
     }
     
     // MARK: UISceneSession Lifecycle

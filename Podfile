@@ -12,7 +12,6 @@ target 'Jotify' do
   pod 'Firebase/Auth'
   pod 'Firebase/Firestore'
   pod 'FirebaseFirestoreSwift'
-  pod 'Firebase/DynamicLinks'
   
   pod 'Blueprints'
   pod 'Pageboy', '~> 3.6'
@@ -20,6 +19,7 @@ target 'Jotify' do
   pod 'ViewAnimator'
   pod 'SPIndicator'
   pod 'SPPermissions/Notification'
+  pod 'airbridge-ios-sdk', '4.0.2'
   
   post_install do |installer|
     installer.pods_project.targets.each do |target|
