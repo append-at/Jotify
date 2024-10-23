@@ -5,18 +5,37 @@
 //  Created by Harrison Leath on 1/16/21.
 //
 
-import FirebaseDynamicLinks
 import SwiftUI
 import UIKit
+import Airbridge
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate, UNUserNotificationCenterDelegate {
     var window: UIWindow?
+    
+    private func handleDeepLink(_ url: URL) {
+        let urlString = url.absoluteString
+        
+        if urlString.hasPrefix("jotify://recentnotewidget-link") {
+            handleRecentNoteWidget()
+        } else if urlString.hasPrefix("jotify://settings") {
+            handleSettings(urlString)
+        } else if urlString.hasPrefix("jotify://write") {
+            presentController(WriteNoteController())
+        } else if urlString.hasPrefix("jotify://note") {
+            handleNoteEdit(urlString)
+        } else {
+            guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+                  let queryItems = components.queryItems else { return }
+            
+            for queryItem in queryItems {
+                if queryItem.name == "referralId" {
+                    UserDefaults.standard.set(queryItem.value, forKey: "referralId")
+                }
+            }
+        }
+    }
 
     func scene(_ scene: UIScene, willConnectTo _: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
-        // Use this method to optionally configure and attach the UIWindow `window` to the provided UIWindowScene `scene`.
-        // If using a storyboard, the `window` property will automatically be initialized and attached to the scene.
-        // This delegate does not imply the connecting scene or session are new (see `application:configurationForConnectingSceneSession` instead).
-
         UNUserNotificationCenter.current().delegate = self
 
         // handle initial setup from dedicated controller
@@ -35,8 +54,23 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, UNUserNotificationCente
             }
         }
 
-        // pull up recent note widget launched app
-        maybePressedRecentNoteWidget(urlContexts: connectionOptions.urlContexts)
+        if let urlContext = connectionOptions.urlContexts.first {
+            Airbridge.trackDeeplink(url: urlContext.url)
+            
+            let isHandled = Airbridge.handleDeeplink(url: urlContext.url) { url in
+                self.handleDeepLink(url)
+            }
+            
+            if !isHandled {
+                maybePressedRecentNoteWidget(urlContexts: connectionOptions.urlContexts)
+            }
+        }
+        
+        Airbridge.handleDeferredDeeplink { url in
+            if let url = url {
+                self.handleDeepLink(url)
+            }
+        }
 
         guard let _ = (scene as? UIWindowScene) else { return }
     }
@@ -83,57 +117,30 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, UNUserNotificationCente
     }
 
     func scene(_: UIScene, continue userActivity: NSUserActivity) {
-        if let incomingUrl = userActivity.webpageURL {
-            print("Incoming URL is \(incomingUrl)")
-            DynamicLinks.dynamicLinks().handleUniversalLink(incomingUrl) { dynamicLink, error in
-                guard error == nil else {
-                    print("Found an error with dynamic link: \(error!.localizedDescription)")
-                    return
-                }
-                if let dynamicLink = dynamicLink {
-                    self.handleIncomingDynamicLink(dynamicLink)
-                }
+        Airbridge.trackDeeplink(userActivity: userActivity)
+        
+        let isHandled = Airbridge.handleDeeplink(userActivity: userActivity) { url in
+            self.handleDeepLink(url)
+        }
+        
+        if !isHandled {
+            if let incomingUrl = userActivity.webpageURL {
+                print("Incoming URL is \(incomingUrl)")
             }
         }
     }
 
-    // App opened from background - used partially for widgets
     func scene(_: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
-        print("Received a URL through a custom scheme...")
-        guard let urlinfo = URLContexts.first?.url else { return }
-        if let dynamicLink = DynamicLinks.dynamicLinks().dynamicLink(fromCustomSchemeURL: urlinfo) {
-            handleIncomingDynamicLink(dynamicLink)
-        } else {
+        guard let urlContext = URLContexts.first else { return }
+        
+        Airbridge.trackDeeplink(url: urlContext.url)
+        
+        let isHandled = Airbridge.handleDeeplink(url: urlContext.url) { url in
+            self.handleDeepLink(url)
+        }
+        
+        if !isHandled {
             maybePressedRecentNoteWidget(urlContexts: URLContexts)
-        }
-    }
-
-    func handleIncomingDynamicLink(_ dynamicLink: DynamicLink) {
-        guard let url = dynamicLink.url else {
-            print("The dynamic link object has no url")
-            return
-        }
-
-        let urlString = url.absoluteString
-
-        if urlString.hasPrefix("jotify://recentnotewidget-link") {
-            handleRecentNoteWidget()
-        } else if urlString.hasPrefix("jotify://settings") {
-            handleSettings(urlString)
-        } else if urlString.hasPrefix("jotify://write") {
-            presentController(WriteNoteController())
-        } else if urlString.hasPrefix("jotify://note") {
-            handleNoteEdit(urlString)
-        } else {
-            // 기존 로직 유지 (referralId 처리 등)
-            guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
-                  let queryItems = components.queryItems else { return }
-            for queryItem in queryItems {
-                print("Parameter \(queryItem.name) has a value of \(queryItem.value ?? "")")
-                if queryItem.name == "referralId" {
-                    UserDefaults.standard.set(queryItem.value, forKey: "referralId")
-                }
-            }
         }
     }
 
@@ -177,7 +184,6 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, UNUserNotificationCente
         window?.rootViewController?.present(presentable, animated: true, completion: nil)
     }
 
-    // collect data and present EditingController if widget pressed
     private func maybePressedRecentNoteWidget(urlContexts: Set<UIOpenURLContext>) {
         guard let _: UIOpenURLContext = urlContexts.first(where: { $0.url.scheme == "recentnotewidget-link" }) else { return }
         print("🚀 Launched from widget")

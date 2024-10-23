@@ -12,7 +12,7 @@ target 'Jotify' do
   pod 'Firebase/Auth'
   pod 'Firebase/Firestore'
   pod 'FirebaseFirestoreSwift'
-  pod 'Firebase/DynamicLinks'
+  pod 'airbridge-ios-sdk', '4.1.0'
   
   pod 'Blueprints'
   pod 'Pageboy', '~> 3.6'
