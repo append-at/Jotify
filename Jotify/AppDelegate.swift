@@ -8,6 +8,7 @@
 import Firebase
 import CoreData
 import AuthenticationServices
+import Airbridge
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -15,6 +16,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
         FirebaseApp.configure()
+        
+        let option = AirbridgeOptionBuilder(name: "jotify", token: "5f1dac3087cf4bf0a027f3d60dd37382")
+            .setLogLevel(.debug)
+            .setSDKSignature(
+                id: "YOUR_SDK_SIGNATURE_SECRET_ID", 
+                secret: "YOUR_SDK_SIGNATURE_SECRET"
+            )
+            .setTrackAirbridgeDeeplinkOnlyEnabled(true)
+            .build()
+        
+        Airbridge.initializeSDK(option: option)
         
         //check to see if Apple credential revoked since last launch
         didAppleIDStateRevokeWhileTerminated()
